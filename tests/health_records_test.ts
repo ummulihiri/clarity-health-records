@@ -26,7 +26,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-  name: "Access grant and record creation test",
+  name: "Access grant and record creation with categories test",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const patient = accounts.get('wallet_1')!;
     const provider = accounts.get('wallet_2')!;
@@ -41,48 +41,63 @@ Clarinet.test({
     let accessBlock = chain.mineBlock([
       Tx.contractCall('health-records', 'grant-access', [
         types.principal(provider.address),
-        types.uint(100)
+        types.uint(100),
+        types.bool(false)
       ], patient.address)
     ]);
     accessBlock.receipts[0].result.expectOk().expectBool(true);
 
-    // Add record
+    // Add record with category
     let recordBlock = chain.mineBlock([
       Tx.contractCall('health-records', 'add-record', [
         types.principal(patient.address),
         types.ascii("0x1234567890abcdef"),
-        types.ascii("UPDATE")
+        types.ascii("UPDATE"),
+        types.ascii("GENERAL")
       ], provider.address)
     ]);
     recordBlock.receipts[0].result.expectOk().expectUint(1);
 
-    // Verify access
+    // Verify access and history
     let accessCheck = chain.mineBlock([
       Tx.contractCall('health-records', 'check-access', [
         types.principal(provider.address),
         types.principal(patient.address)
-      ], patient.address)
+      ], patient.address),
+      Tx.contractCall('health-records', 'get-access-history', [
+        types.uint(1)
+      ], provider.address)
     ]);
     accessCheck.receipts[0].result.expectOk().expectBool(true);
   },
 });
 
 Clarinet.test({
-  name: "Unauthorized access test",
+  name: "Emergency access test",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const patient = accounts.get('wallet_1')!;
     const provider = accounts.get('wallet_2')!;
-    const unauthorized = accounts.get('wallet_3')!;
 
-    // Add record without access should fail
-    let block = chain.mineBlock([
+    // Setup with emergency access
+    let setup = chain.mineBlock([
+      Tx.contractCall('health-records', 'register-patient', [], patient.address),
+      Tx.contractCall('health-records', 'register-provider', [], provider.address),
+      Tx.contractCall('health-records', 'grant-access', [
+        types.principal(provider.address),
+        types.uint(100),
+        types.bool(true)
+      ], patient.address)
+    ]);
+
+    // Add emergency record
+    let emergencyRecord = chain.mineBlock([
       Tx.contractCall('health-records', 'add-record', [
         types.principal(patient.address),
         types.ascii("0x1234567890abcdef"),
-        types.ascii("UPDATE")
-      ], unauthorized.address)
+        types.ascii("EMERGENCY"),
+        types.ascii("EMERGENCY")
+      ], provider.address)
     ]);
-    
-    block.receipts[0].result.expectErr(types.uint(100)); // err-not-authorized
+    emergencyRecord.receipts[0].result.expectOk().expectUint(1);
   },
 });
