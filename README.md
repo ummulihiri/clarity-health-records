@@ -9,7 +9,17 @@ A decentralized health record management system built on the Stacks blockchain. 
 - Healthcare providers can add new records with patient permission 
 - Encrypted storage of sensitive health data
 - Full audit trail of record access
+- Emergency access mechanism for critical situations
+- Record versioning and categorization
+- Access history tracking
+- Contract pause functionality for emergency situations
 
 ## Security
 
 All health records are stored encrypted and can only be accessed by authorized parties. Access control is managed through the blockchain to ensure transparency and security.
+
+## Record Categories
+- GENERAL: Regular health records
+- EMERGENCY: Critical care records
+- CHRONIC: Long-term condition records
+- PREVENTIVE: Wellness and prevention records
